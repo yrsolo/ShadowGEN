@@ -21,7 +21,7 @@ also you can use the web interface:
 ## Features
 
 - **Automated Object Detection**  
-  Uses **BLIP-2** to describe the main object, **GroundingDINO** to detect bounding boxes, and **SAM** (Segment Anything) to generate a precise object mask.
+  Uses **BLIP-2** to describe the main object, **GroundingDINO** to detect bounding boxes, and **BiRefNet** to generate a precise object mask.
 
 - **Shadow Generation**  
   A **Pix2Pix**-based pipeline adds a natural-looking shadow under the cut-out object, complete with adjustable angle and soft reflections.
