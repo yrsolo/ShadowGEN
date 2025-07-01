@@ -39,7 +39,7 @@ also you can use the web interface:
 2. **Image Processing Pipeline**  
    - **BLIP-2**: Generates a textual description of the main object.  
    - **GroundingDINO**: Zero-shot detection from the BLIP-2 prompt.  
-   - **SAM**: Precise segmentation to extract the object mask.  
+   - **BiRefNet**: Mate segmentation to extract the object mask.  
    - **Pix2Pix**: Renders a shadowed composite on a bright background.
 
 3. **Infrastructure**
