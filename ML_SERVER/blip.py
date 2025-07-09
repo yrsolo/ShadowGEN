@@ -54,7 +54,9 @@ class BlipImageCaptioner:
         answer_idx = caption.find("Answer:") + len("Answer: ")
         return caption[answer_idx:]
 
+print('Loading Blip model...')
 blip = BlipImageCaptioner()
+print('Blip model loaded')
 
 @memo
 def describe_center_object(image):

@@ -1,7 +1,8 @@
 import pandas as pd
 from seaborn import histplot
 
-from utils import pic2float, pic2int, pic2pil, sigmoid, swimg
+from ML_SERVER.birefnet import biref_process
+from utils import pic2float, pic2int, pic2pil, sigmoid, swimg, mask_crop, memo, center, memo
 
 import torch
 import torch.nn as nn
@@ -15,12 +16,15 @@ from torchvision.transforms import functional as tf
 from torch.utils.data import Dataset, DataLoader
 from PIL import Image
 import os
+
+import cv2
+
+import numpy as np
 from IPython.display import clear_output
 
 import plotly.express as px
 
 import kornia
-from utils import memo
 from constant import device, ROOT
 
 DTYPE = torch.float16
@@ -33,6 +37,7 @@ USE_AVARAGE = True
 from ML_SERVER.sam import sam_process
 
 from constant import device, ROOT
+
 
 def add_mask(x, mask):
     m = mask[:, 0:1, :, :]
@@ -199,8 +204,14 @@ class ShadowGenerator:
 
     def generate(self, colors, masks, rots=None,):
 
+        if not isinstance(colors, list):
+            colors = [colors]
+            masks = [masks]
+
         colors = torch.stack([torch.tensor(i).permute(2, 0, 1) for i in colors])
         masks = 1 - torch.stack([torch.tensor(i).permute(2, 0, 1) for i in masks])
+        white = torch.ones_like(colors)
+        colors_on_white = white * masks + colors * (1-masks)
 
         if rots is None:
             rotate_angle = torch.randint(0, 359, (1,)).item()
@@ -211,7 +222,7 @@ class ShadowGenerator:
         rots = torch.cat([torch.sin(rotate_angle), torch.cos(rotate_angle)], dim=0)
         rots = torch.cat([rots[None, :]] * colors.size(0), dim=0)
 
-        input = add_rot_mask(colors, rots, masks)
+        input = add_rot_mask(colors_on_white, rots, masks)
 
         with torch.inference_mode():
             shadow = self.generator(input.half().to(device))
@@ -223,7 +234,9 @@ class ShadowGenerator:
 
         return shadow_comp
 
+print('Loading Shadow model...')
 sg = ShadowGenerator()
+print('Shadow model loaded')
 
 @memo
 def generate_shadow(images, masks, rots=None):
@@ -232,15 +245,21 @@ def generate_shadow(images, masks, rots=None):
 
 
 def test():
-    sg = ShadowGenerator()
+    # sg = ShadowGenerator()
     image_path = os.path.join(ROOT, "image.jpg")
     image = Image.open(image_path)
     image = pic2float(image)
-    images, masks, _ = sam_process(image)
+    image, mask = biref_process(image)
+    # mask = mask[:,:,None]
+    print(image.shape, mask.shape)
+    image, mask = center(image, mask)
+    print(image.shape, mask.shape)
+    # images, masks, _ = sam_process(image)
 
-    shadow_comp = sg.generate(images, masks)
+    shadow_comp = generate_shadow(image, mask, rots=10)
+    print(shadow_comp)
 
-    swimg([*images, *masks, *shadow_comp])
+    # swimg([*images, *masks, *shadow_comp])
 
 if __name__ == '__main__':
     test()

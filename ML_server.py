@@ -81,11 +81,11 @@ def process():
 
     # Здесь может быть ML-обработка
     # Например, обработка изображения (в данном случае просто возвращаем обратно)
-    processed_image, text = process_image(image, params)
+    processed_images, text = process_image(image, params)
     # print(f'processed_image with shape {processed_image.size}')
 
 
-    return prepare_response(processed_image, text, 200)
+    return prepare_response(processed_images, text, 200)
 
 if __name__ == "__main__":
     pass

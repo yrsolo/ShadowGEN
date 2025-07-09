@@ -19,15 +19,15 @@ import requests
 from PIL import Image
 import io
 
-from utils import pic2float, pic2int, pic2pil, sigmoid, swimg
+from utils import pic2float, pic2int, pic2pil, sigmoid, swimg, mask_crop, memo, center
 
-from utils import memo
+from constant import device
 
 # MODEL_NAME = "facebook/sam-vit-large"
 MODEL_NAME = 'facebook/sam-vit-base'
 DTYPE = torch.float16
 
-from constant import device
+
 
 def advanced_mask(logits, threshold=0.5, sigma=5, alpha=10):
     """
@@ -68,46 +68,7 @@ def advanced_mask(logits, threshold=0.5, sigma=5, alpha=10):
     return final_mask
 
 
-def mask_crop(image, mask):
-    coords = np.where(mask)
-    y_min, y_max = coords[0].min(), coords[0].max()
-    x_min, x_max = coords[1].min(), coords[1].max()
-    return image[y_min:y_max, x_min:x_max], mask[y_min:y_max, x_min:x_max]
-
-
-def center(image, mask, shape=(512, 512), boudary=0.2):
-    h, w = shape
-    bh = int(h * (1 - boudary))
-    bw = int(w * (1 - boudary))
-    obj_h, obj_w, _ = image.shape
-    scale = min(bh / obj_h, bw / obj_w)
-    new_h, new_w = int(obj_h * scale), int(obj_w * scale)
-    # display(pic2pil(image))
-    if scale < 1:
-        algo = cv2.INTER_AREA
-    else:
-        algo = cv2.INTER_AREA
-        algo = cv2.INTER_LINEAR
-        # algo = cv2.INTER_CUBIC
-        # algo = cv2.INTER_LANCZOS4
-
-    image = cv2.resize(image, (new_w, new_h), interpolation=algo)
-
-    mask = cv2.resize(mask, (new_w, new_h))
-
-    top = (h - new_h) // 2
-    left = (w - new_w) // 2
-
-    new_mask = np.zeros((h, w, 3), dtype=np.float32)
-    new_mask[top:top + new_h, left:left + new_w] = mask
-    #
-    new_image = np.zeros((h, w, 3), dtype=np.float32)
-    new_image[top:top + new_h, left:left + new_w] = image
-
-    return new_image, new_mask
-
-
-class Predictor():
+class SAM_Predictor():
     def __init__(self, model=None, processor=None, device=None, model_name=MODEL_NAME, type=DTYPE):
         self.dtype = type
 
@@ -179,7 +140,7 @@ class Predictor():
         return best_masks
 
 
-sam_predictor = Predictor()
+sam_predictor = SAM_Predictor()
 
 @memo
 def sam_process(image, text=None, bbox=None):
@@ -204,11 +165,11 @@ def sam_process(image, text=None, bbox=None):
         
     return composes, crop_masks, text
 
-def test_sam():
+def test():
     test_image = "../image.jpg"
     test_image = Image.open(test_image).convert("RGB")
     test_bbox = [ 5.8209e+01,  2.9224e+01,  2.9198e+02,  1.8345e+02]
     print(sam_process(test_image, bbox=test_bbox))
 
 if __name__ == "__main__":
-    test_sam()
+    test()

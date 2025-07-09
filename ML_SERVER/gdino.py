@@ -5,7 +5,7 @@ from PIL import Image
 
 from utils import pic2float, device, memo
 
-detector_id = "IDEA-Research/grounding-dino-tiny"
+# detector_id = "IDEA-Research/grounding-dino-tiny"
 
 def preprocess_caption(caption: str) -> str:
     result = caption.lower().strip()
@@ -15,7 +15,7 @@ def preprocess_caption(caption: str) -> str:
 
 
 class GDINO:
-    def __init__(self, model_id="IDEA-Research/grounding-dino-base", device="cuda"):
+    def __init__(self, model_id="IDEA-Research/grounding-dino-tiny", device="cuda"):
         self.device = device
 
         quant_config = BitsAndBytesConfig(
@@ -25,11 +25,12 @@ class GDINO:
             bnb_4bit_quant_type="nf4"         # можно попробовать и другие варианты, например 'fp4'
         )
 
-        self.processor = GroundingDinoProcessor.from_pretrained(detector_id)
+        self.processor = GroundingDinoProcessor.from_pretrained(model_id)
         self.model = GroundingDinoForObjectDetection.from_pretrained(
-            detector_id,
+            model_id,
             torch_dtype=torch.float16,
-            quantization_config=quant_config
+            quantization_config=quant_config,
+            low_cpu_mem_usage=True,
         ).to(device)
 
     def detect_objects(self, image, text='a cat'):
@@ -53,8 +54,9 @@ class GDINO:
         )[0]
         return results
 
-
+print('Loading GDINO model...')
 gdino = GDINO()
+print('GDINO model loaded')
 
 @memo
 def detect_objects(image, text='a cat'):
