@@ -35,6 +35,68 @@ def timer(start=None, text=None):
 def decontaminate(im, mask, steps=15, blur=9):
 
     if isinstance(im, list):
+        return [decontaminate(i, m, steps, blur) for i, m in zip(im, mask)]
+
+    # приводим к float [0,1] и нужным формам
+    im = pic2float(im)      # твоя функция, оставляем
+    mask = pic2float(mask)
+
+    # маска Photoroom ожидается однослойная (H, W) в [0,1]
+    if mask.ndim == 3:
+        alpha = mask[..., 0]
+    else:
+        alpha = mask
+
+    alpha = np.clip(alpha, 0.0, 1.0)
+
+    # Photoroom-реализация ждёт image в [0,1], shape (H,W,3)
+    # im у тебя, судя по коду, уже такой. На всякий случай:
+    if im.ndim == 2:
+        im = np.stack([im, im, im], axis=-1)
+
+    # маппим твой blur -> радиусы r1, r2
+    # steps можно игнорить или использовать как множитель, но для интерфейса его оставим
+    r1 = max(int(blur * 8), 3)
+    if r1 % 2 == 0:
+        r1 += 1
+    r2 = max(int(blur * 2), 3)
+    if r2 % 2 == 0:
+        r2 += 1
+
+    # напрямую вызываем numpy/cv2-реализацию из Photoroom (она у тебя уже есть)
+    im_un = FB_blur_fusion_foreground_estimator_pil_2(im, alpha, r1=r1, r2=r2)
+
+    # гарантируем тип
+    im_un = im_un.astype(np.float32)
+
+    return im_un
+
+def FB_blur_fusion_foreground_estimator_pil_2(image, alpha, r1=90, r2=6):
+    # Thanks to the source: https://github.com/Photoroom/fast-foreground-estimation
+    alpha = alpha[:, :, None]
+    F, blur_B = FB_blur_fusion_foreground_estimator_pil(
+        image, image, image, alpha, r=r1)
+    return FB_blur_fusion_foreground_estimator_pil(image, F, blur_B, alpha, r=r2)[0]
+
+
+def FB_blur_fusion_foreground_estimator_pil(image, F, B, alpha, r=90):
+    if isinstance(image, Image.Image):
+        image = np.array(image) / 255.0
+    blurred_alpha = cv2.blur(alpha, (r, r))[:, :, None]
+
+    blurred_FA = cv2.blur(F * alpha, (r, r))
+    blurred_F = blurred_FA / (blurred_alpha + 1e-5)
+
+    blurred_B1A = cv2.blur(B * (1 - alpha), (r, r))
+    blurred_B = blurred_B1A / ((1 - blurred_alpha) + 1e-5)
+    F = blurred_F + alpha * (image - alpha * blurred_F - (1 - alpha) * blurred_B)
+    F = np.clip(F, 0, 1)
+    return F, blurred_B
+
+@memo
+def decontaminate_old(im, mask, steps=15, blur=9):
+
+    if isinstance(im, list):
         ims = []
         for i, m in zip(im, mask):
             ims.append(decontaminate(i, m, steps, blur))
