@@ -68,24 +68,29 @@ def test():
 
 @app.route('/process', methods=['POST'])
 def process():
-    # Получаем изображение из запроса
-    if 'image' not in request.files:
-        return prepare_response(None, 'Изображение не найдено', 400)
+    try:
+        # Получаем изображение из запроса
+        if 'image' not in request.files:
+            return prepare_response(None, 'Изображение не найдено', 400)
 
-    print(request.form)
+        print(request.form)
 
-    image_file = request.files['image']
-    image = Image.open(image_file)
+        image_file = request.files['image']
+        image = Image.open(image_file)
 
-    params = request.form
+        params = request.form
 
-    # Здесь может быть ML-обработка
-    # Например, обработка изображения (в данном случае просто возвращаем обратно)
-    processed_images, text = process_image(image, params)
-    # print(f'processed_image with shape {processed_image.size}')
+        # Здесь может быть ML-обработка
+        # Например, обработка изображения (в данном случае просто возвращаем обратно)
+        processed_images, text = process_image(image, params)
+        # print(f'processed_image with shape {processed_image.size}')
 
 
-    return prepare_response(processed_images, text, 200)
+        return prepare_response(processed_images, text, 200)
+    except Exception as e:
+        # Логируем ошибку (пока print, потом заменим на logging)
+        print(f"Ошибка обработки: {e}")
+        return prepare_response(None, f'Ошибка обработки: {str(e)}', 500)
 
 if __name__ == "__main__":
     pass

@@ -32,7 +32,7 @@ DTYPE = torch.float16
 MODEL = 'SHADOW/models/Generator.pth'
 AV_MODEL = 'SHADOW/models/AveragedModel.pth'
 
-USE_AVARAGE = True
+USE_AVERAGE = True
 
 from ML_SERVER.sam import sam_process
 
@@ -187,7 +187,7 @@ class Discriminator(nn.Module):
 
 
 class ShadowGenerator:
-    def __init__(self, generator=None, device=device, avarage=USE_AVARAGE):
+    def __init__(self, generator=None, device=device, avarage=USE_AVERAGE):
         if generator is None:
             generator = Generator()
             if avarage:
