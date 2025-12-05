@@ -1,0 +1,3 @@
+timeout 30
+start ssh_tunne_for_GPU_serverl.cmd
+start run_ML_server.cmd
